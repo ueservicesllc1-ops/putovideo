@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Extractor de Subtítulos</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2/css/pico.min.css" />
+	<link rel="stylesheet" href="./styles.css" />
+</head>
+<body data-theme="dark">
+	<div class="container">
+		<header class="topbar">
+			<nav class="menubar">
+				<ul>
+					<li class="menu fileMenu">
+						<button class="menuItem" data-menu="file" id="menuFile">File</button>
+						<div class="menuDropdown" id="fileDropdown">
+							<button class="menuEntry" data-file-act="new">Nuevo</button>
+							<button class="menuEntry" data-file-act="save">Guardar</button>
+							<button class="menuEntry" data-file-act="saveas">Guardar como…</button>
+							<button class="menuEntry" data-file-act="open">Abrir…</button>
+							<button class="menuEntry" data-file-act="exportimg">Exportar imagen (vista previa)</button>
+						</div>
+					</li>
+					<li><button class="menuItem" data-menu="edit">Edit</button></li>
+					<li><button class="menuItem" data-menu="settings">Settings</button></li>
+				</ul>
+			</nav>
+			<div class="brand">Karaoke Studio</div>
+			<div class="actions">
+				<button id="btnExportSRT" class="contrast" disabled>Exportar SRT</button>
+			</div>
+		</header>
+
+		<div class="layout">
+			<div class="left">
+				<div class="panel">
+					<div class="panelHeader">Proyecto</div>
+					<div class="controls">
+			<label class="file-picker">
+				<input type="file" id="videoFile" accept="video/*,audio/*" />
+				<a role="button" class="primary fullWidth" title="Seleccionar archivo de video o audio">Cargar video/audio</a>
+			</label>
+
+			<div class="options">
+				<label>Tamaño
+					<select id="size">
+						<option value="s" selected>Pequeño</option>
+						<option value="m">Mediano</option>
+						<option value="l">Grande</option>
+					</select>
+				</label>
+					<label>Vista previa
+						<select id="aspect">
+							<option value="auto" selected>Auto</option>
+							<option value="16-9">16:9</option>
+							<option value="9-16">9:16</option>
+						</select>
+					</label>
+				<label>
+					<input type="checkbox" id="fillMode" /> Rellenar sin barras (recorta)
+				</label>
+				<label>Calidad
+					<select id="quality">
+						<option value="tiny">tiny (más rápido, menor calidad)</option>
+						<option value="base">base</option>
+						<option value="small">small</option>
+						<option value="medium">medium</option>
+						<option value="large-v3" selected>large-v3 (mejor calidad, más lento)</option>
+					</select>
+				</label>
+
+				<label>Idioma
+					<select id="language">
+						<option value="">Auto</option>
+						<option value="es">Español</option>
+						<option value="en">Inglés</option>
+						<option value="pt">Portugués</option>
+						<option value="fr">Francés</option>
+						<option value="de">Alemán</option>
+						<option value="it">Italiano</option>
+					</select>
+				</label>
+
+					<label>Traducción a
+						<select id="targetLang">
+							<option value="">Sin traducción</option>
+							<option value="en">Inglés</option>
+							<option value="es">Español</option>
+							<option value="pt">Portugués</option>
+							<option value="fr">Francés</option>
+						</select>
+					</label>
+
+					<label>Palabras por bloque
+						<select id="maxWords">
+							<option value="0" selected>Auto</option>
+							<option value="3">3</option>
+							<option value="4">4</option>
+							<option value="6">6</option>
+							<option value="8">8</option>
+							<option value="10">10</option>
+							<option value="12">12</option>
+						</select>
+					</label>
+
+
+			</div>
+			<div class="actionsRow">
+				<button id="btnTranscribe" class="primary fullWidth">Generar subtítulos</button>
+			</div>
+			<div class="progressRow">
+				<progress id="progress" max="100" value="0"></progress>
+				<span id="progressText">0%</span>
+			</div>
+					</div>
+				</div>
+			</div>
+			<div class="mid">
+				<div class="panel smallPanel">
+					<div class="panelHeader">Subtítulos</div>
+					<div class="segments">
+						<table>
+							<thead>
+								<tr>
+									<th>#</th>
+									<th>Inicio</th>
+									<th>Fin</th>
+									<th>Texto</th>
+								</tr>
+							</thead>
+							<tbody id="segmentsBody"></tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+			<div class="center">
+				<div class="preview">
+					<div id="previewBox" class="previewBox">
+						<video id="video" controls></video>
+						<div id="subtitleOverlay" class="subtitleOverlay">
+							<div id="subtitleBox" class="subtitleBox">
+								<div id="subtitleText" class="subtitleText"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="panel savedPanel">
+					<div class="panelHeader">Proyectos guardados</div>
+					<div id="savedList" class="savedList"></div>
+				</div>
+			</div>
+			<div class="right">
+				<div class="styleControls">
+					<h3>Estilos de karaoke</h3>
+					<div class="styleGrid">
+						<label>Fuente
+							<select id="styleFont">
+								<option value="system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif" selected>Sistema</option>
+								<option value="Arial, Helvetica, sans-serif">Arial</option>
+								<option value="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif">Segoe UI</option>
+								<option value="'Trebuchet MS', Helvetica, sans-serif">Trebuchet</option>
+								<option value="'Times New Roman', Times, serif">Times</option>
+							</select>
+						</label>
+						<label>Tamaño
+							<input id="styleSize" type="range" min="14" max="64" value="28" />
+						</label>
+						<label>Color (progreso)
+							<input id="styleDoneColor" type="color" value="#ffea00" />
+						</label>
+						<label>Color (resto)
+							<input id="styleRestColor" type="color" value="#ffffff" />
+						</label>
+						<label>Fondo
+							<input id="styleBgColor" type="color" value="#000000" />
+						</label>
+						<label>Opacidad fondo
+							<input id="styleBgOpacity" type="range" min="0" max="100" value="15" />
+						</label>
+						<label>Borde
+							<input id="styleBorder" type="checkbox" />
+						</label>
+						<label>Color borde
+							<input id="styleBorderColor" type="color" value="#000000" />
+						</label>
+						<label>Grosor borde
+							<input id="styleBorderWidth" type="range" min="0" max="8" value="0" />
+						</label>
+						<label>Sombra
+							<input id="styleShadow" type="checkbox" checked />
+						</label>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div id="status"></div>
+	</div>
+
+	<!-- Importar proyecto (archivo .json) -->
+	<input type="file" id="importProjectFile" accept="application/json" style="display:none" />
+
+	<!-- Modal Guardar / Guardar como -->
+	<div id="saveModal" class="modal" style="display:none">
+		<div class="modalBody">
+			<h3>Guardar proyecto</h3>
+			<label>Nombre
+				<input type="text" id="saveName" />
+			</label>
+			<label>Carpeta de destino
+				<div style="display:flex; gap:8px; align-items:center">
+					<input type="text" id="saveDirectory" placeholder="Elegir carpeta…" readonly />
+					<button id="chooseFolder" type="button">Elegir carpeta…</button>
+				</div>
+			</label>
+			<div class="modalActions">
+				<button id="saveCancel">Cancelar</button>
+				<button id="saveConfirm" class="primary">Guardar</button>
+			</div>
+		</div>
+	</div>
+
+	<script src="//127.0.0.1:5500/livereload.js?snipver=1"></script>
+	<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+	<script src="./app.js"></script>
+</body>
+</html>
+
+

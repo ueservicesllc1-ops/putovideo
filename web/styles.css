@@ -1,0 +1,136 @@
+html, body { height: 100%; }
+body {
+	font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+	margin: 0;
+	color: #e6e6e6;
+	background: #0f1216;
+	padding: 0 40px;
+	font-size: 14px;
+}
+.topbar, .panel, .styleControls, .previewBox, table, td input, td textarea { border-radius: 0 !important; }
+:root { --pico-border-radius: 0; --pico-font-size: 14px; }
+.brand { font-size: 14px; }
+.actions button { font-size: 13px; padding: 6px 10px; }
+.controls button, .controls select, .controls input[type="number"], .file-picker span { font-size: 13px; padding: 6px 10px; }
+.styleGrid input[type="range"], .styleGrid input[type="color"], .styleGrid select { font-size: 13px; }
+.styleControls h3 { font-size: 14px; }
+.topbar { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; position: sticky; top: 0; background: linear-gradient(180deg, rgba(15,18,22,0.95), rgba(15,18,22,0.75) 70%, rgba(15,18,22,0)); backdrop-filter: saturate(1.2) blur(6px); z-index: 10; border-bottom: 1px solid #1e2630; }
+.brand { font-weight: 700; letter-spacing: 0.3px; font-size: 18px; color: #dfe6f3; }
+.menubar ul { list-style: none; display: flex; gap: 14px; padding: 0; margin: 0; }
+.menubar { display: flex; align-items: center; justify-content: flex-start; margin-left: 12px; }
+.menuItem { background: transparent; border: none; color: #cbd6e5; font-size: 13px; padding: 4px 2px; cursor: pointer; border-radius: 0; }
+.menuItem:hover { text-decoration: underline; color: #e6eefb; }
+.menu { position: relative; }
+.menuDropdown { position: absolute; left: 0; top: 100%; background: #0b0e13; border: 1px solid #1e2630; display: none; min-width: 160px; z-index: 20; }
+.menuDropdown.open { display: grid; }
+.menuEntry { text-align: left; background: transparent; border: none; color: #e6e6e6; padding: 8px 10px; font-size: 13px; }
+.menuEntry:hover { background: #171d26; }
+.actions { display: flex; gap: 10px; }
+.primary { background: #2b2f36; border: 1px solid #3a4048; color: #e6e6e6; border-radius: 0; }
+.primary:hover { background: #262a30; }
+.contrast { background: #2b2f36; border: 1px solid #3a4048; color: #e6e6e6; border-radius: 0; }
+.contrast:hover { background: #262a30; }
+.panel { background: #0b0e13; border: 1px solid #1e2630; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.03) inset; }
+.panelHeader { padding: 12px 14px; border-bottom: 1px solid #1e2630; font-weight: 600; color: #cbd6e5; }
+.container { max-width: none; width: 100%; margin: 0 auto; padding: 0; min-height: 100vh; display: flex; flex-direction: column; }
+h1 { margin: 8px 0 16px; }
+.layout { display: grid; gap: 16px; align-items: stretch; grid-template-columns: 300px 420px 1fr 360px; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+.left { width: 100%; max-width: 300px; }
+.mid { width: 100%; max-width: 420px; }
+.center { min-width: 0; display: flex; flex-direction: column; min-height: 0; }
+.right { width: 100%; max-width: 360px; }
+.controls { display: grid; gap: 12px; align-items: center; grid-template-columns: 1fr; padding: 12px; }
+.file-picker input { display: none; }
+.file-picker a { cursor: pointer; }
+.file-picker span, button, select, input[type="number"], .file-picker a { padding: 10px 12px; border-radius: 0; cursor: pointer; background: #2b2f36; border: 1px solid #3a4048; color: #e6e6e6; }
+.file-picker a:hover, button:hover { background: #262a30; }
+.fullWidth { display: block; width: 100%; text-align: center; }
+.progressRow { display: flex; align-items: center; gap: 8px; }
+progress { width: 100%; height: 12px; }
+.options { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.preview { margin-top: 12px; display: flex; justify-content: center; align-items: center; min-height: 0; }
+.previewBox { width: 100%; max-width: 1100px; height: auto; max-height: 70vh; background: #0a0d11; position: relative; border-radius: 0; border: 1px solid #1e2630; box-shadow: 0 10px 30px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.03) inset; }
+.previewBox video { width: 100%; height: auto; max-height: 100%; object-fit: contain; background: #000; border-radius: 0; }
+/* Overlay de subtítulos tipo karaoke */
+.subtitleOverlay { position: absolute; left: 0; right: 0; bottom: 6%; padding: 0; text-align: center; pointer-events: auto; }
+.subtitleBox { position: absolute; left: 50%; transform: translateX(-50%); bottom: 0; width: 70%; min-width: 200px; max-width: 95%; min-height: 40px; max-height: 80%; resize: both; overflow: hidden; padding: 4px; }
+.subtitleText { display: block; white-space: normal; word-break: break-word; }
+.subtitleOverlay .line { display: block; font-size: clamp(12px, 2.2vw, 22px); line-height: 1.25; font-weight: 600; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.7); background: rgba(10,13,17,0.35); border-radius: 0; padding: 2px 6px; border: none; }
+.subtitleOverlay .done { color: #ffea00; text-shadow: 0 0 10px rgba(255,234,0,0.7), 0 2px 4px rgba(0,0,0,0.8); }
+.subtitleOverlay .rest { opacity: 0.9; }
+/* Tamaños de vista previa */
+.previewBox.size-s { max-width: 480px; }
+.previewBox.size-m { max-width: 720px; }
+.previewBox.size-l { max-width: 900px; }
+/* Modo rellenar sin barras (recorta) */
+.previewBox.cover video { object-fit: cover; }
+/* Por defecto (Auto) mantenemos una altura máxima razonable y responsive */
+/* El límite de altura solo aplica en modo Auto (sin relación fija) */
+.previewBox:not(.ratio-16-9):not(.ratio-9-16) video { max-height: 60vh; }
+/* Relación de aspecto sin exceder 60vh */
+.previewBox.ratio-16-9 { aspect-ratio: 16 / 9; max-height: 70vh; }
+.previewBox.ratio-9-16 { aspect-ratio: 9 / 16; max-height: 70vh; }
+.previewBox.ratio-16-9 { max-width: 900px; }
+/* Hacer 9:16 más pequeño según tamaño seleccionado */
+.previewBox.size-s.ratio-9-16 { max-width: 300px; }
+.previewBox.size-m.ratio-9-16 { max-width: 420px; }
+.previewBox.size-l.ratio-9-16 { max-width: 540px; }
+/* Cuando hay relación fija, el video debe usar todo el contenedor sin límite extra */
+.previewBox.ratio-16-9 video, .previewBox.ratio-9-16 video { max-height: 100%; height: auto; object-fit: contain; }
+#status { margin: 8px 0; color: #a8b3c2; }
+.segments { margin-top: 0; overflow: auto; max-height: 55vh; }
+/* Proyectos guardados */
+.savedPanel { margin-top: 12px; }
+.savedList { display: grid; gap: 8px; padding: 12px; max-height: 28vh; overflow: auto; }
+.savedItem { display: grid; grid-template-columns: 1fr auto auto auto; gap: 8px; align-items: center; border: 1px solid #1e2630; padding: 8px; }
+.savedItem .name { color: #dfe6f3; font-size: 13px; }
+.savedItem button { padding: 4px 8px; font-size: 12px; border-radius: 0; background: #2b2f36; border: 1px solid #3a4048; color: #e6e6e6; }
+.savedItem button:hover { background: #262a30; }
+
+/* Modal básico */
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 50; }
+.modal .modalBody { background: #0b0e13; border: 1px solid #1e2630; padding: 16px; width: 420px; display: grid; gap: 10px; }
+.modal .modalBody h3 { margin: 0 0 6px; }
+.modal .modalBody input { width: 100%; padding: 8px; background: #0f141d; border: 1px solid #1e2630; color: #e6e6e6; }
+.modalActions { display: flex; gap: 10px; justify-content: flex-end; }
+table { width: 100%; border-collapse: collapse; background: #0b0e13; border: 1px solid #1e2630; border-radius: 0; overflow: hidden; }
+th, td { border-bottom: 1px solid #1e2630; padding: 6px; font-size: 13px; vertical-align: top; }
+tbody tr:hover { background: #111722; }
+td input, td textarea {
+	width: 100%; border: 1px solid #1e2630; border-radius: 0; padding: 6px; background: #0f141d; color: #e6e6e6; font: inherit; font-size: 13px;
+}
+td textarea { min-height: 56px; resize: vertical; }
+
+/* Estilos compactos para área de subtítulos */
+.segRowMain td { padding-top: 2px; padding-bottom: 0; }
+.segRowText td { padding-top: 0; padding-bottom: 6px; }
+.timeInput { width: 44px; padding: 0 4px; font-size: 11px; line-height: 20px; height: 20px; }
+.colIndex { width: 24px; }
+.colStart { width: 56px; }
+.colEnd { width: 56px; }
+.colText.placeholder { color: #6b7685; font-size: 12px; }
+.segTextarea { width: 100%; min-height: 96px; }
+/* minimizar controles de los inputs numéricos */
+.timeInput::-webkit-outer-spin-button,
+.timeInput::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.timeInput { -moz-appearance: textfield; }
+
+/* Controles de estilo a la derecha */
+.styleControls { margin-top: 12px; background: #0b0e13; border: 1px solid #1e2630; border-radius: 12px; padding: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.03) inset; }
+.styleControls h3 { margin: 0 0 8px; font-size: 16px; color: #d3dbe7; }
+.styleGrid { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0,1fr)); }
+.styleGrid label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #a8b3c2; }
+.styleGrid input[type="range"], .styleGrid input[type="color"], .styleGrid select { width: 100%; }
+
+/* Responsive: en pantallas pequeñas, apilar */
+@media (max-width: 1200px) {
+	.layout { grid-template-columns: 1fr; }
+	.left, .mid, .center, .right { max-width: none; }
+}
+
+/* Panel pequeño para lista de subtítulos */
+.smallPanel { margin-top: 12px; }
+.smallPanel .panelHeader { font-size: 13px; padding: 10px 12px; }
+.smallPanel table th, .smallPanel table td { font-size: 12px; padding: 4px; }
+
+
