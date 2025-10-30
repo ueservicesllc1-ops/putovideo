@@ -31,6 +31,7 @@ const $saveCancel = document.getElementById("saveCancel");
 const $saveConfirm = document.getElementById("saveConfirm");
 const $chooseFolder = document.getElementById("chooseFolder");
 let chosenDirHandle = null;
+let lastFileHandle = null; // Para sobrescribir con "Guardar"
 // Controles de estilo Karaoke
 const $styleFont = document.getElementById("styleFont");
 const $styleSize = document.getElementById("styleSize");
@@ -46,19 +47,6 @@ const $styleShadow = document.getElementById("styleShadow");
 let segments = [];
 let rafId = null;
 let karaokeStyle = null;
-let autosaveTimer = null;
-const AUTOSAVE_MS = 1500;
-
-function queueAutosave() {
-	clearTimeout(autosaveTimer);
-	autosaveTimer = setTimeout(() => {
-		try {
-			const proj = getProjectState({ promptName: false });
-			persistProject(proj);
-			$status.textContent = 'Guardado automático';
-		} catch (_) { /* noop */ }
-	}, AUTOSAVE_MS);
-}
 
 $file.addEventListener("change", () => {
 	const f = $file.files?.[0];
@@ -129,7 +117,7 @@ $importProjectFile?.addEventListener("change", async () => {
         const txt = await f.text();
         const proj = JSON.parse(txt);
         loadProject(proj);
-        persistProject(proj);
+        // No guardar automáticamente
     } catch (e) {
         alert("Archivo inválido");
     } finally {
@@ -295,11 +283,9 @@ function renderSegments() {
 		const [inputStart, inputEnd] = trMain.querySelectorAll("input");
 		inputStart.addEventListener("change", () => {
 			segments[idx].start = Number(inputStart.value);
-			queueAutosave();
 		});
 		inputEnd.addEventListener("change", () => {
 			segments[idx].end = Number(inputEnd.value);
-			queueAutosave();
 		});
 
 		// Segunda fila con textarea a lo ancho
@@ -311,7 +297,6 @@ function renderSegments() {
 		const textArea = td.querySelector("textarea");
 		textArea.addEventListener("input", () => {
 			segments[idx].text = textArea.value;
-			queueAutosave();
 		});
 		trText.appendChild(td);
 
@@ -319,7 +304,6 @@ function renderSegments() {
 		$segmentsBody.appendChild(trText);
 	});
 	$btnExportSRT.disabled = segments.length === 0;
-	if (segments.length) queueAutosave();
 }
 
 // ====== Guardar/Exportar/Importar proyectos ======
@@ -366,8 +350,8 @@ function getProjectState(opts) {
     };
 }
 
-function persistProject(proj) {
-    // Guardar en servidor
+function writeBackendList(proj){
+    // persiste sólo para listado backend/localStorage, no toca archivo del usuario
     fetch(`${apiBase}/projects/save`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -381,11 +365,7 @@ function persistProject(proj) {
             box: proj.box,
             segments: proj.segments,
         })
-    }).then(async (r)=>{
-        if (!r.ok) throw new Error('projects/save not ok');
-        renderSavedProjects();
-    }).catch(()=>{
-        // fallback a localStorage si falla
+    }).then(()=>renderSavedProjects()).catch(()=>{
         const key = "karaoke_projects";
         const all = JSON.parse(localStorage.getItem(key) || "[]");
         all.unshift(proj);
@@ -424,40 +404,73 @@ $chooseFolder?.addEventListener('click', async ()=>{
     } catch (e) { /* cancelado */ }
 });
 
+async function writeProjectToFileHandle(fileHandle, proj){
+    const writable = await fileHandle.createWritable();
+    await writable.write(new Blob([JSON.stringify({
+        name: proj.name,
+        language: proj.language,
+        target: proj.target,
+        quality: proj.quality,
+        maxWords: Number(proj.maxWords||0),
+        style: proj.style,
+        box: proj.box,
+        segments: proj.segments,
+    }, null, 2)], { type: 'application/json' }));
+    await writable.close();
+}
+
 function saveProject() {
     const proj = getProjectState({ promptName: false });
     const last = JSON.parse(localStorage.getItem('karaoke_last_save')||'{}');
     proj.name = last.name || proj.name;
     proj.directory = last.directory || null;
-    saveProjectFlow(proj);
+
+    // Si ya hubo "Guardar como..." con file handle, sobrescribir
+    if (window.showSaveFilePicker && lastFileHandle) {
+        writeProjectToFileHandle(lastFileHandle, proj).then(()=>{
+            $status.textContent = 'Guardado';
+            writeBackendList(proj);
+        }).catch(()=>{
+            // Si falla, forzar Guardar como
+            openSaveModal(true);
+        });
+        return;
+    }
+    // Si no hay file handle, forzar Guardar como
+    openSaveModal(true);
 }
 
 async function saveProjectFlow(proj){
-    // 1) Si el navegador soporta selector de carpeta y no hay ruta escrita, usa diálogo nativo
+    try {
+        // Preferir diálogo nativo de Guardar como cuando esté disponible
+        if (window.showSaveFilePicker) {
+            const fh = await window.showSaveFilePicker({
+                suggestedName: `${(proj.name||'Proyecto').replace(/[^a-z0-9-_]+/gi,'_')}.json`,
+                types: [{ description: 'Proyecto JSON', accept: { 'application/json': ['.json'] } }]
+            });
+            await writeProjectToFileHandle(fh, proj);
+            lastFileHandle = fh;
+            $status.textContent = 'Guardado';
+            writeBackendList(proj);
+            return;
+        }
+    } catch (e) {
+        console.warn('saveFilePicker failed', e);
+    }
+    // Fallback: selector de carpeta
     try {
         if (!proj.directory && (chosenDirHandle || window.showDirectoryPicker)) {
             const dirHandle = chosenDirHandle || await window.showDirectoryPicker({ mode: 'readwrite' });
             const fname = `${(proj.name||'Proyecto').replace(/[^a-z0-9-_]+/gi,'_')}.json`;
             const fileHandle = await dirHandle.getFileHandle(fname, { create: true });
-            const writable = await fileHandle.createWritable();
-            await writable.write(new Blob([JSON.stringify({
-                name: proj.name,
-                language: proj.language,
-                target: proj.target,
-                quality: proj.quality,
-                maxWords: Number(proj.maxWords||0),
-                style: proj.style,
-                box: proj.box,
-                segments: proj.segments,
-            }, null, 2)], { type: 'application/json' }));
-            await writable.close();
+            await writeProjectToFileHandle(fileHandle, proj);
+            lastFileHandle = fileHandle;
             $status.textContent = `Guardado en carpeta elegida: ${fname}`;
+            writeBackendList(proj);
         }
     } catch (e) {
         console.warn('save to chosen folder failed', e);
     }
-    // 2) Siempre persistir en backend para listar
-    persistProject(proj);
 }
 
 function exportProject() {
@@ -486,7 +499,8 @@ function saveAsProject() {
     const proj = getProjectState();
     const newName = prompt("Guardar como:", proj.name) || proj.name;
     proj.name = newName;
-    persistProject(proj);
+    // Redirigir a flujo Guardar como
+    saveProjectFlow(proj);
 }
 
 async function openProject() {
@@ -635,10 +649,6 @@ $video.addEventListener("pause", () => stopKaraokeLoop());
 $video.addEventListener("seeking", () => renderKaraokeOverlay($video.currentTime || 0));
 $video.addEventListener("timeupdate", () => renderKaraokeOverlay($video.currentTime || 0));
 
-// Auto-guardado al terminar de redimensionar/mover la caja de subtítulos
-window.addEventListener('mouseup', () => queueAutosave());
-window.addEventListener('touchend', () => queueAutosave());
-
 function startKaraokeLoop() {
     cancelAnimationFrame(rafId);
     const tick = () => {
@@ -750,7 +760,6 @@ function applyKaraokeStyles() {
         $subtitleOverlay.style.fontFamily = karaokeStyle.fontFamily;
     }
     renderKaraokeOverlay($video.currentTime || 0);
-    queueAutosave();
 }
 
 function buildStrokeCss(on, width, color) {
