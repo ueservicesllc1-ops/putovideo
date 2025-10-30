@@ -22,7 +22,14 @@ Thumbs.db
 # Server runtime data
 server/projects/
 
-# Node/npm (opcional)
+# Node/npm
 node_modules/
 dist/
 build/
+
+# Tauri / Rust
+src-tauri/target/
+*.log
+*.lock
+/target
+src-tauri/target/release/bundle/
