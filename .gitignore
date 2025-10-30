@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+.pytest_cache/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# Env
+.env
+.env.*
+
+# Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Server runtime data
+server/projects/
+
+# Node/npm (opcional)
+node_modules/
+dist/
+build/
