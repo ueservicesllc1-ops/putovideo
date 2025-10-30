@@ -1,4 +1,5 @@
 const apiBase = "http://127.0.0.1:8000";
+let projectsApiDownUntil = 0;
 
 const $video = document.getElementById("video");
 const $file = document.getElementById("videoFile");
@@ -380,7 +381,10 @@ function persistProject(proj) {
             box: proj.box,
             segments: proj.segments,
         })
-    }).then(()=>renderSavedProjects()).catch(()=>{
+    }).then(async (r)=>{
+        if (!r.ok) throw new Error('projects/save not ok');
+        renderSavedProjects();
+    }).catch(()=>{
         // fallback a localStorage si falla
         const key = "karaoke_projects";
         const all = JSON.parse(localStorage.getItem(key) || "[]");
@@ -512,7 +516,38 @@ function newProject() {
 function renderSavedProjects() {
     if (!$savedList) return;
     $savedList.innerHTML = "Cargando...";
-    fetch(`${apiBase}/projects/list`).then(r=>r.json()).then(({projects})=>{
+    if (Date.now() < projectsApiDownUntil) {
+        // backend silenciado temporalmente → usar localStorage
+        const key = "karaoke_projects";
+        const all = JSON.parse(localStorage.getItem(key) || "[]");
+        $savedList.innerHTML = "";
+        all.forEach((p) => {
+            const div = document.createElement("div");
+            div.className = "savedItem";
+            div.innerHTML = `
+                <div class="name">${escapeHtml(p.name || 'Proyecto')} · <span style="color:#8aa">${new Date(p.createdAt||Date.now()).toLocaleString()}</span></div>
+                <div><button data-act="load">Cargar</button></div>
+                <div><button data-act="export">Exportar</button></div>
+                <div><button data-act="delete">Borrar</button></div>
+            `;
+            div.querySelector('[data-act="load"]').addEventListener('click',()=>loadProject(p));
+            div.querySelector('[data-act="export"]').addEventListener('click',()=>{
+                const txt = JSON.stringify(p, null, 2);
+                downloadText(`${(p.name||'proyecto')}.json`, txt);
+            });
+            div.querySelector('[data-act="delete"]').addEventListener('click',()=>{
+                const newAll = JSON.parse(localStorage.getItem(key) || "[]").filter(x=>x!==p);
+                localStorage.setItem(key, JSON.stringify(newAll));
+                renderSavedProjects();
+            });
+            $savedList.appendChild(div);
+        });
+        return;
+    }
+    fetch(`${apiBase}/projects/list`).then(r=>{
+        if (!r.ok) throw new Error('projects/list not ok');
+        return r.json();
+    }).then(({projects})=>{
         const all = projects || [];
         $savedList.innerHTML = "";
         all.forEach((p) => {
@@ -540,6 +575,8 @@ function renderSavedProjects() {
             $savedList.appendChild(div);
         });
     }).catch(()=>{
+        // marcar backend caído por 60s para no spamear
+        projectsApiDownUntil = Date.now() + 60000;
         // fallback: localStorage
         const key = "karaoke_projects";
         const all = JSON.parse(localStorage.getItem(key) || "[]");
