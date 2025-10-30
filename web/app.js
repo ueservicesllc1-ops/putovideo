@@ -45,6 +45,19 @@ const $styleShadow = document.getElementById("styleShadow");
 let segments = [];
 let rafId = null;
 let karaokeStyle = null;
+let autosaveTimer = null;
+const AUTOSAVE_MS = 1500;
+
+function queueAutosave() {
+	clearTimeout(autosaveTimer);
+	autosaveTimer = setTimeout(() => {
+		try {
+			const proj = getProjectState({ promptName: false });
+			persistProject(proj);
+			$status.textContent = 'Guardado automático';
+		} catch (_) { /* noop */ }
+	}, AUTOSAVE_MS);
+}
 
 $file.addEventListener("change", () => {
 	const f = $file.files?.[0];
@@ -102,7 +115,7 @@ $fileDropdown?.addEventListener("click", (e) => {
     const act = btn.getAttribute('data-file-act');
     $fileDropdown.classList.remove('open');
     if (act === 'new') newProject();
-    if (act === 'save') openSaveModal(false);
+    if (act === 'save') saveProject();
     if (act === 'saveas') openSaveModal(true);
     if (act === 'open') openProject();
     if (act === 'exportimg') exportPreviewImage();
@@ -281,9 +294,11 @@ function renderSegments() {
 		const [inputStart, inputEnd] = trMain.querySelectorAll("input");
 		inputStart.addEventListener("change", () => {
 			segments[idx].start = Number(inputStart.value);
+			queueAutosave();
 		});
 		inputEnd.addEventListener("change", () => {
 			segments[idx].end = Number(inputEnd.value);
+			queueAutosave();
 		});
 
 		// Segunda fila con textarea a lo ancho
@@ -295,6 +310,7 @@ function renderSegments() {
 		const textArea = td.querySelector("textarea");
 		textArea.addEventListener("input", () => {
 			segments[idx].text = textArea.value;
+			queueAutosave();
 		});
 		trText.appendChild(td);
 
@@ -302,6 +318,7 @@ function renderSegments() {
 		$segmentsBody.appendChild(trText);
 	});
 	$btnExportSRT.disabled = segments.length === 0;
+	if (segments.length) queueAutosave();
 }
 
 // ====== Guardar/Exportar/Importar proyectos ======
@@ -330,10 +347,13 @@ function applySubtitleBoxState(state) {
     $subtitleBox.style.bottom = `${Math.max(0, Math.min(0.8, state.bottom || 0)) * 100}%`;
 }
 
-function getProjectState() {
+function getProjectState(opts) {
+    const shouldPrompt = !(opts && opts.promptName === false);
+    const defaultName = $file.files?.[0]?.name || "Proyecto";
+    const name = shouldPrompt ? (prompt("Nombre del proyecto:", defaultName) || "Proyecto") : defaultName;
     return {
         id: Date.now().toString(36),
-        name: prompt("Nombre del proyecto:", $file.files?.[0]?.name || "Proyecto") || "Proyecto",
+        name,
         createdAt: new Date().toISOString(),
         language: $language?.value || "",
         target: $targetLang?.value || "",
@@ -373,7 +393,7 @@ function persistProject(proj) {
 function openSaveModal(forceName) {
     if (!$saveModal) { saveProject(); return; }
     const last = JSON.parse(localStorage.getItem('karaoke_last_save')||'{}');
-    $saveName.value = forceName ? (getProjectState().name||'Proyecto') : (last.name||getProjectState().name||'Proyecto');
+    $saveName.value = forceName ? (getProjectState({ promptName: false }).name||'Proyecto') : (last.name||getProjectState({ promptName: false }).name||'Proyecto');
     $saveDirectory.value = last.directory || '';
     chosenDirHandle = null;
     $saveModal.style.display = 'flex';
@@ -401,7 +421,7 @@ $chooseFolder?.addEventListener('click', async ()=>{
 });
 
 function saveProject() {
-    const proj = getProjectState();
+    const proj = getProjectState({ promptName: false });
     const last = JSON.parse(localStorage.getItem('karaoke_last_save')||'{}');
     proj.name = last.name || proj.name;
     proj.directory = last.directory || null;
@@ -578,6 +598,10 @@ $video.addEventListener("pause", () => stopKaraokeLoop());
 $video.addEventListener("seeking", () => renderKaraokeOverlay($video.currentTime || 0));
 $video.addEventListener("timeupdate", () => renderKaraokeOverlay($video.currentTime || 0));
 
+// Auto-guardado al terminar de redimensionar/mover la caja de subtítulos
+window.addEventListener('mouseup', () => queueAutosave());
+window.addEventListener('touchend', () => queueAutosave());
+
 function startKaraokeLoop() {
     cancelAnimationFrame(rafId);
     const tick = () => {
@@ -689,6 +713,7 @@ function applyKaraokeStyles() {
         $subtitleOverlay.style.fontFamily = karaokeStyle.fontFamily;
     }
     renderKaraokeOverlay($video.currentTime || 0);
+    queueAutosave();
 }
 
 function buildStrokeCss(on, width, color) {
